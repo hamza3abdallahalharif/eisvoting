@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        label {
+            margin-right: 10px;
+        }
+        input[type="password"], select {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            width: 200px;
+        }
+        .candidate-button, .submit-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+        }
+        .candidate-button:hover, .submit-button:hover {
+            background-color: #45a049;
+        }
+        #results, #data-table, #admin-section {
+            margin-top: 20px;
+            display: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Vote for Your Candidate</h1>
+<label for="password">Enter Password to Access Voting:</label>
+<br />
+<input type="password" id="password" />
+<button class="submit-button" onclick="checkPassword()">Submit</button>
+
+<div id="votingOptions" style="display: none;">
+    <h2>Select Year and Gender</h2>
+    <label for="year">Year Group:</label>
+    <select id="year" onchange="updateCandidates()">
+        <option value="">--Select Year--</option>
+        <option value="4">Year 4</option>
+        <option value="5">Year 5</option>
+        <option value="6">Year 6</option>
+        <option value="7">Year 7</option>
+        <option value="8">Year 8</option>
+        <option value="9">Year 9</option>
+        <option value="10">Year 10</option>
+        <option value="11">Year 11</option>
+    </select>
+
+    <label for="gender">Gender:</label>
+    <select id="gender" onchange="updateCandidates()">
+        <option value="">--Select Gender--</option>
+        <option value="boy">Boys</option>
+        <option value="girl">Girls</option>
+    </select>
+
+    <div id="results"></div>
+    <button id="viewDataButton" class="submit-button" style="display: none;" onclick="viewData()">View Data</button>
+</div>
+
+<div id="data-table">
+    <h2>Total Votes</h2>
+    <label for="dataPassword">Enter password to view data:</label>
+    <br />
+    <input type="password" id="dataPassword" placeholder="Enter password to view data" />
+    <button class="submit-button" onclick="checkDataPassword()">Submit</button>
+    <div id="voteResults"></div>
+</div>
+
+<div id="admin-section">
+    <h1>Admin Dashboard</h1>
+    <label for="adminPassword">Enter Admin Password:</label>
+    <input type="password" id="adminPassword" />
+    <button class="submit-button" onclick="checkAdminPassword()">Submit</button>
+
+    <div id="adminResults" style="display: none;"></div>
+</div>
+
+<script>
+    const password = "e123";
+    const adminPassword = "yourAdminPassword"; // Change this to a secure password
+    const candidates = {
+        4: { boy: ["John", "Alex", "Michael"], girl: ["Sarah", "Emily", "Jessica"] },
+        5: { boy: ["David", "Luke", "Sam"], girl: ["Sophia", "Olivia", "Emma"] },
+        6: { boy: ["Ethan", "James", "Ryan"], girl: ["Isabella", "Mia", "Ava"] },
+        7: { boy: ["Liam", "Noah", "Lucas"], girl: ["Amelia", "Charlotte", "Harper"] },
+        8: { boy: ["Jack", "Henry", "Oliver"], girl: ["Ella", "Grace", "Chloe"] },
+        9: { boy: ["Daniel", "Matthew", "Jacob"], girl: ["Avery", "Zoe", "Lily"] },
+        10: { boy: ["Lucas", "Isaac", "Owen"], girl: ["Sofia", "Aria", "Riley"] },
+        11: { boy: ["Carter", "Wyatt", "Jaxon"], girl: ["Scarlett", "Victoria", "Penelope"] }
+    };
+
+    const votes = JSON.parse(localStorage.getItem('votes')) || {
+        4: { boy: {}, girl: {} },
+        5: { boy: {}, girl: {} },
+        6: { boy: {}, girl: {} },
+        7: { boy: {}, girl: {} },
+        8: { boy: {}, girl: {} },
+        9: { boy: {}, girl: {} },
+        10: { boy: {}, girl: {} },
+        11: { boy: {}, girl: {} }
+    };
+
+    function checkPassword() {
+        const inputPassword = document.getElementById('password').value;
+        if (inputPassword === password) {
+            document.getElementById('votingOptions').style.display = 'block';
+        } else {
+            alert('Incorrect password. Please try again.');
+        }
+    }
+
+    function updateCandidates() {
+        const year = document.getElementById('year').value;
+        const gender = document.getElementById('gender').value;
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
+
+        if (year && gender) {
+            const selectedCandidates = candidates[year][gender];
+            selectedCandidates.forEach(candidate => {
+                const button = document.createElement('button');
+                button.className = 'candidate-button';
+                button.innerText = candidate;
+                button.onclick = () => vote(candidate, year, gender);
+                resultsDiv.appendChild(button);
+            });
+            resultsDiv.style.display = 'block';
+            document.getElementById('viewDataButton').style.display = 'inline-block';
+        } else {
+            resultsDiv.innerHTML = '';
+            resultsDiv.style.display = 'none';
+            document.getElementById('viewDataButton').style.display = 'none';
+        }
+    }
+
+    function vote(candidate, year, gender) {
+        if (!votes[year][gender][candidate]) {
+            votes[year][gender][candidate] = 0;
+        }
+        votes[year][gender][candidate]++;
+        
+        // Save votes to local storage
+        localStorage.setItem('votes', JSON.stringify(votes));
+
+        alert(`You voted for ${candidate} (${gender}) in Year ${year}!`);
+    }
+
+    function checkDataPassword() {
+        const inputPassword = document.getElementById('dataPassword').value;
+        if (inputPassword === password) {
+            viewData();
+        } else {
+            alert('Incorrect password. Please try again.');
+        }
+    }
+
+    function viewData() {
+        const voteResultsDiv = document.getElementById('voteResults');
+        voteResultsDiv.innerHTML = '';
+
+        Object.keys(votes).forEach(year => {
+            let table = `<table><tr><th>Candidate</th><th>Gender</th><th>Votes</th></tr>`;
+            Object.keys(votes[year]).forEach(gender => {
+                Object.entries(votes[year][gender]).forEach(([candidate, count]) => {
+                    table += `<tr><td>${candidate}</td><td>${gender}</td><td>${count}</td></tr>`;
+                });
+            });
+            table += `</table>`;
+            voteResultsDiv.innerHTML += `<h3>Year ${year}</h3>${table}`;
+        });
+
+        document.getElementById('data-table').style.display = 'block';
+    }
+
+    function checkAdminPassword() {
+        const inputPassword = document.getElementById('adminPassword').value;
+        if (inputPassword === adminPassword) {
+            displayAdminData();
+        } else {
+            alert('Incorrect password. Please try again.');
+        }
+    }
+
+    function displayAdminData() {
+        const adminResultsDiv = document.getElementById('adminResults');
+        adminResultsDiv.innerHTML = '<h2>Total Votes (Admin View)</h2>';
+
+        Object.keys(votes).forEach(year => {
+            let table = `<h3>Year ${year}</h3><table><tr><th>Candidate</th><th>Gender</th><th>Votes</th></tr>`;
+            Object.keys(votes[year]).forEach(gender => {
+                Object.entries(votes[year][gender]).forEach(([candidate, count]) => {
+                    table += `<tr><td>${candidate}</td><td>${gender}</td><td>${count}</td></tr>`;
+                });
+            });
+            table += `</table>`;
+            adminResultsDiv.innerHTML += table;
+        });
+
+        adminResultsDiv.style.display = 'block';
+    }
+    
+</script>
+
+</body>
+</html>
+
+
+
+
